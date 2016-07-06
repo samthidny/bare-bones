@@ -1,0 +1,21 @@
+{
+  "name": "clean",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "babel-core": "^6.10.4",
+    "babel-loader": "^6.2.4",
+    "babel-preset-es2015": "^6.9.0",
+    "jquery": "^3.0.0",
+    "path": "^0.12.7",
+    "pixi": "^0.3.1",
+    "pixi.js": "^3.0.11",
+    "webpack": "^1.13.1"
+  }
+}
