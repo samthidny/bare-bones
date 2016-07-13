@@ -1,4 +1,4 @@
-import TestApp from './TestApp.js';
+import ReelApp from './ReelApp.js';
 
-var app = new TestApp();
+var app = new ReelApp();
 app.initApp();
