@@ -148,17 +148,39 @@ describe('ReelData', () => {
     expect(reel.currentIndex).to.equal(8);
     expect(reel.view).to.eql([8, 9, 0, 1]);
 
-
-
-
   })
 
 
 
+  it('Setting currentIndex should give valid scrollYnegative scrollY should correct to positive', () => {
+    reel.setSymbolHeight(100);
+    reel.setScrollY(-100);
+    expect(reel.scrollY).to.equal(900);
+  })
+
+  
+
+
+  it('Setting currentIndex should give valid scrollY', () => {
+    reel.setSymbolHeight(100);
+    reel.setCurrentIndex(2);
+    expect(reel.scrollY).to.equal(200);
+  })
+
+  
+  it('Setting currentIndex should give valid scrollY', () => {
+    reel.setSymbolHeight(100);
+    reel.setCurrentIndex(-1);
+    expect(reel.scrollY).to.equal(900);
+  })
+
+  
 
   it('', () => {
 
   })
+
+
 
 
 

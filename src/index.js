@@ -1,4 +1,3 @@
-import ReelApp from './ReelApp.js';
+import SlotApp from './SlotApp.js';
 
-var app = new ReelApp();
-app.initApp();
+var app = new SlotApp();

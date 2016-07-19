@@ -46,14 +46,13 @@
 
 	'use strict';
 
-	var _TestApp = __webpack_require__(1);
+	var _SlotApp = __webpack_require__(1);
 
-	var _TestApp2 = _interopRequireDefault(_TestApp);
+	var _SlotApp2 = _interopRequireDefault(_SlotApp);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var app = new _TestApp2.default();
-	app.initApp();
+	var app = new _SlotApp2.default();
 
 /***/ },
 /* 1 */
@@ -67,9 +66,104 @@
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	var _Framework = __webpack_require__(2);
+	var _ReelApp = __webpack_require__(2);
 
-	var _Framework2 = _interopRequireDefault(_Framework);
+	var _ReelApp2 = _interopRequireDefault(_ReelApp);
+
+	var _jquery = __webpack_require__(4);
+
+	var _jquery2 = _interopRequireDefault(_jquery);
+
+	var _pixi = __webpack_require__(5);
+
+	var _pixi2 = _interopRequireDefault(_pixi);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var SlotApp = function () {
+		function SlotApp() {
+			_classCallCheck(this, SlotApp);
+
+			this.renderer = _pixi2.default.autoDetectRenderer(1000, 500, { transparent: true });
+			//this.renderer.backgroundColor = 0x0494df;
+			document.body.appendChild(this.renderer.view);
+			this.stage = new _pixi2.default.Container();
+
+			//LOAD ASSETS
+			var loader = _pixi2.default.loader;
+			loader.add('images/symbols.json');
+
+			var inst = this;
+			loader.load(function (loader, resources) {
+				inst.onAssetsLoaded(loader, resources);
+			});
+
+			//Create multiple Reels
+			this.reels = [];
+			this.numReels = 10;
+			for (var i = 0; i < this.numReels; i++) {
+				var reel = new _ReelApp2.default();
+				reel.addTo(this.stage);
+				reel.container.x = i * 100;
+				reel.container.y = 100;
+
+				reel.reelData.setCurrentIndex(i * 3);
+				//reel.reelData.setScrollY(100);
+				var dir = i % 2 == 0 ? -1 : 1;
+				reel.reelData.speed = (i + 1) * 2 * dir;
+				reel.reelData.setViewSize(4);
+				reel.reelData.setSymbolHeight(100);
+				this.reels.push(reel);
+			}
+		}
+
+		_createClass(SlotApp, [{
+			key: 'onAssetsLoaded',
+			value: function onAssetsLoaded(loader, resources) {
+				for (var i = 0; i < this.numReels; i++) {
+					var reel = this.reels[i];
+
+					reel.onAssetsLoaded(loader, resources);
+				}
+
+				this.render();
+			}
+		}, {
+			key: 'render',
+			value: function render() {
+				var inst = this;
+
+				for (var i = 0; i < this.numReels; i++) {
+					var reel = this.reels[i];
+					reel.reelData.setScrollY(reel.reelData.scrollY - reel.reelData.speed);
+					reel.render();
+				}
+
+				this.renderer.render(this.stage);
+				requestAnimationFrame(function () {
+					inst.render();
+				});
+			}
+		}]);
+
+		return SlotApp;
+	}();
+
+	exports.default = SlotApp;
+
+/***/ },
+/* 2 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	var _ReelData = __webpack_require__(3);
 
@@ -87,108 +181,85 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var TestApp = function () {
-		function TestApp() {
-			_classCallCheck(this, TestApp);
+	var ReelApp = function () {
+		function ReelApp() {
+			_classCallCheck(this, ReelApp);
 
 			console.log("Constructed");
+			this.symbols = [];
+			this.plane = null;
+			this.stage = null;
+			this.renderer = null;
+			this.textures = {};
+			this.reelData = new _ReelData2.default();
+			this.reelData.setSymbols([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+			this.paytable = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+			this.frames = [];
+			this.parent = null;
+			this.container = null;
 		}
 
-		_createClass(TestApp, [{
-			key: 'initApp',
-			value: function initApp() {
+		_createClass(ReelApp, [{
+			key: 'addTo',
+			value: function addTo(parent) {
+				this.parent = parent;
+				this.container = new _pixi2.default.Container();
+				this.parent.addChild(this.container);
+			}
+		}, {
+			key: 'onAssetsLoaded',
+			value: function onAssetsLoaded(loader, resources) {
 
-				//Framework is a ES5 class with module.exports = Framework
-				var f = new _Framework2.default();
-				f.test();
-				(0, _jquery2.default)(document).ready(function () {
-					console.log("Docuument Ready");
-				});
+				console.log("Loaded");
 
-				//ReelData is an ECMA2015 class
-				var r = new _ReelData2.default();
-				console.log("ReelSize " + r.viewSize);
+				// lets create moving shape
+				var mask = new _pixi2.default.Graphics();
+				mask.lineStyle(0);
+				mask.beginFill(0x8bc5ff, 0.4);
+				mask.drawRect(0, 0, 100, (this.reelData.viewSize - 1) * this.reelData.symbolHeight);
+				this.container.addChild(mask);
+				this.container.mask = mask;
+				this.parent.addChild(this.container);
 
-				//PIXI is a node module installed using npm pixi.js
-				var renderer = _pixi2.default.autoDetectRenderer(800, 600, { backgroundColor: 0x1099bb });
-				document.body.appendChild(renderer.view);
+				//Add 10 symbols to avoid switching textures and pool them, assumes only ever 1 of each for now.
+				//Originally this was done with textures but I've been warned that is very heavy switching textures
+				//TODO - performance/stress test the 2 methods - as MovieClip works in exact same way (texture swapping)
+				for (var i = 0; i < this.paytable.length; i++) {
+					this.frames.push(_pixi2.default.Texture.fromFrame(i + '.png'));
+				}
 
-				// create the root of the scene graph
-				var stage = new _pixi2.default.Container();
+				//Add symbols based on viewsize (eg 3)
+				for (var i = 0; i < 10; i++) {
+					var sprite = new _pixi2.default.extras.MovieClip(this.frames);
+					this.container.addChild(sprite);
+					sprite.y = i * this.reelData.symbolHeight - this.reelData.symbolHeight;
+					sprite.gotoAndStop(i);
+					this.symbols.push(sprite);
+				}
+			}
+		}, {
+			key: 'render',
+			value: function render() {
+				//Hide pooled sprites
+				for (var i = 0; i < 10; i++) {
+					var sprite = this.symbols[i];
+					sprite.y = 400;
+					sprite.visible = false;
+				}
 
-				// create a texture from an image path
-				var texture = _pixi2.default.Texture.fromImage('https://pixijs.github.io/examples/_assets/basics/bunny.png');
-
-				// create a new Sprite using the texture
-				var bunny = new _pixi2.default.Sprite(texture);
-
-				// center the sprite's anchor point
-				bunny.anchor.x = 0.5;
-				bunny.anchor.y = 0.5;
-
-				// move the sprite to the center of the screen
-				bunny.position.x = 300;
-				bunny.position.y = 150;
-
-				stage.addChild(bunny);
-
-				var dirx = 1;
-				var diry = 1;
-				var speed = 3;
-				var rotation = 0.1;
-
-				// start animating
-				animate();
-
-				function animate() {
-					requestAnimationFrame(animate);
-
-					// just for fun, let's rotate mr rabbit a little
-					bunny.rotation += rotation;
-					bunny.x += dirx * speed;
-					bunny.y += diry * speed;
-
-					if (dirx > 0 && bunny.x >= 750) {
-						dirx = -r();
-					} else if (dirx < 0 && bunny.x <= 50) {
-						dirx = r();
-					}
-
-					if (diry > 0 && bunny.y >= 550) {
-						diry = -r();
-					} else if (diry < 0 && bunny.y <= 50) {
-						diry = r();
-					}
-
-					function r() {
-						rotation = Math.random() - 0.5;
-						return 0.5 + Math.random();
-					}
-
-					// render the container
-					renderer.render(stage);
+				//Add symbols based on viewsize (eg 3)
+				for (var i = 0; i < this.reelData.viewSize; i++) {
+					var sprite = this.symbols[this.reelData.view[i]];
+					sprite.y = i * this.reelData.symbolHeight - this.reelData.scrollOffset;
+					sprite.visible = true;
 				}
 			}
 		}]);
 
-		return TestApp;
+		return ReelApp;
 	}();
 
-	exports.default = TestApp;
-
-/***/ },
-/* 2 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	function Framework() {}
-
-	Framework.prototype.test = function () {
-		console.log("this is a traditional JS Library");
-	};
-
-	module.exports = Framework;
+	exports.default = ReelApp;
 
 /***/ },
 /* 3 */
@@ -214,12 +285,18 @@
 	    this.view = [];
 	    this.currentIndex = 0;
 	    this.numSymbols = 0;
+	    this.symbolHeight = 100;
+	    this.scrollY = 0;
+	    this.scrollOffset = 0;
+	    this.speed = 2;
+	    this.totalHeight = 0;
 	  }
 
 	  _createClass(ReelData, [{
 	    key: "setCurrentIndex",
 	    value: function setCurrentIndex(value) {
 	      this.currentIndex = this.correctIndex(value);
+	      this.scrollY = this.symbolHeight * this.currentIndex;
 	      this.updateView();
 	    }
 	  }, {
@@ -227,6 +304,7 @@
 	    value: function setSymbols(value) {
 	      this.symbols = value;
 	      this.numSymbols = this.symbols.length;
+	      this.updateTotalHeight();
 	      this.updateView();
 	    }
 	  }, {
@@ -241,12 +319,32 @@
 	      this.updateView();
 	    }
 	  }, {
+	    key: "setSymbolHeight",
+	    value: function setSymbolHeight(value) {
+	      this.symbolHeight = value;
+	      this.updateTotalHeight();
+	      this.updateView();
+	    }
+	  }, {
+	    key: "setScrollY",
+	    value: function setScrollY(value) {
+	      this.scrollY = this.correctScrollY(value);
+	      this.currentIndex = this.correctIndex(Math.floor(this.scrollY / this.symbolHeight));
+	      this.scrollOffset = Math.abs(this.scrollY % this.symbolHeight);
+	      this.updateView();
+	    }
+	  }, {
 	    key: "updateView",
 	    value: function updateView() {
 	      this.view = [];
 	      for (var i = 0; i < this.viewSize; i++) {
 	        this.view[i] = this.symbols[this.correctIndex(this.currentIndex + i)]; //this.symbols[this.currentIndex + i];
 	      }
+	    }
+	  }, {
+	    key: "updateTotalHeight",
+	    value: function updateTotalHeight() {
+	      this.totalHeight = this.numSymbols * this.symbolHeight;
 	    }
 
 	    //Util functions
@@ -265,6 +363,17 @@
 	        return this.numSymbols + index % this.numSymbols;
 	      }
 	      return index % this.numSymbols;
+	    }
+	  }, {
+	    key: "correctScrollY",
+	    value: function correctScrollY(value) {
+	      if (value > this.totalHeight) {
+	        return this.correctScrollY(value - this.totalHeight);
+	      } else if (value < 0) {
+	        return this.correctScrollY(value + this.totalHeight);
+	      }
+	      //If value is between 0 - totalHeight then it's valid
+	      return value;
 	    }
 	  }]);
 
