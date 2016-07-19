@@ -1,12 +1,14 @@
 import ReelApp from './ReelApp.js';
+import EventEmitter from 'events';
 
 import $ from 'jquery';
 import PIXI from 'pixi.js';
 
-class SlotApp {
+class SlotApp extends EventEmitter {
 
 	constructor() {
 
+		super();
 		this.renderer = PIXI.autoDetectRenderer(1000, 500, {transparent:true});
 		//this.renderer.backgroundColor = 0x0494df;
 		document.body.appendChild(this.renderer.view);
@@ -48,7 +50,7 @@ class SlotApp {
 			
 			reel.onAssetsLoaded(loader, resources);
 		}
-
+		this.emit("test", "andy", "smith", "test", {things:123});
 		this.render();
 	}
 
