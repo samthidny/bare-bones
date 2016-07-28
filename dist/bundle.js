@@ -66,9 +66,21 @@
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	var _ReelApp = __webpack_require__(2);
+	var _ReelComponent = __webpack_require__(2);
 
-	var _ReelApp2 = _interopRequireDefault(_ReelApp);
+	var _ReelComponent2 = _interopRequireDefault(_ReelComponent);
+
+	var _events = __webpack_require__(145);
+
+	var _events2 = _interopRequireDefault(_events);
+
+	var _ReelMover = __webpack_require__(146);
+
+	var _ReelMover2 = _interopRequireDefault(_ReelMover);
+
+	var _AssetLoader = __webpack_require__(148);
+
+	var _AssetLoader2 = _interopRequireDefault(_AssetLoader);
 
 	var _jquery = __webpack_require__(4);
 
@@ -78,66 +90,156 @@
 
 	var _pixi2 = _interopRequireDefault(_pixi);
 
+	var _tween = __webpack_require__(147);
+
+	var _tween2 = _interopRequireDefault(_tween);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var SlotApp = function () {
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var SlotApp = function (_EventEmitter) {
+		_inherits(SlotApp, _EventEmitter);
+
 		function SlotApp() {
 			_classCallCheck(this, SlotApp);
 
-			this.renderer = _pixi2.default.autoDetectRenderer(1000, 500, { transparent: true });
-			//this.renderer.backgroundColor = 0x0494df;
-			document.body.appendChild(this.renderer.view);
-			this.stage = new _pixi2.default.Container();
+			//Load defaults to avoid compiling evrytime we want to tweak settings
 
-			//LOAD ASSETS
-			var loader = _pixi2.default.loader;
-			loader.add('images/symbols.json');
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SlotApp).call(this));
 
-			var inst = this;
-			loader.load(function (loader, resources) {
-				inst.onAssetsLoaded(loader, resources);
+			var inst = _this;
+			_jquery2.default.ajax({
+				dataType: "json",
+				url: "config.json",
+				success: function success(data) {
+					inst.loadAssets(data);
+				}
 			});
 
-			//Create multiple Reels
-			this.reels = [];
-			this.numReels = 10;
-			for (var i = 0; i < this.numReels; i++) {
-				var reel = new _ReelApp2.default();
-				reel.addTo(this.stage);
-				reel.container.x = i * 100;
-				reel.container.y = 100;
-
-				reel.reelData.setCurrentIndex(i * 3);
-				//reel.reelData.setScrollY(100);
-				var dir = i % 2 == 0 ? -1 : 1;
-				reel.reelData.speed = (i + 1) * 2 * dir;
-				reel.reelData.setViewSize(4);
-				reel.reelData.setSymbolHeight(100);
-				this.reels.push(reel);
-			}
+			return _this;
 		}
 
 		_createClass(SlotApp, [{
-			key: 'onAssetsLoaded',
-			value: function onAssetsLoaded(loader, resources) {
+			key: 'loadAssets',
+			value: function loadAssets(data) {
+				SlotApp.config = data;
+				var inst = this;
+				var assetLoader = new _AssetLoader2.default();
+				assetLoader.once(_AssetLoader2.default.LOAD_COMPLETE, function () {
+					inst.createUI();
+				});
+				assetLoader.load();
+			}
+		}, {
+			key: 'createUI',
+			value: function createUI() {
+
+				this.renderer = _pixi2.default.autoDetectRenderer(SlotApp.config.GAME_WIDTH, SlotApp.config.GAME_HEIGHT, { transparent: true });
+				//document.body.appendChild(this.renderer.view);
+				document.getElementById("game-container").appendChild(this.renderer.view);
+				//this.renderer.backgroundColor = 0x0494df;
+				this.stage = new _pixi2.default.Container();
+
+				var reelsContainer = new _pixi2.default.Container();
+				reelsContainer.x = Math.round((SlotApp.config.GAME_WIDTH - 500) / 2);
+				reelsContainer.y = Math.round((SlotApp.config.GAME_HEIGHT - 300) / 2);
+
+				this.stage.addChild(reelsContainer);
+
+				//TODO -  Put Reel creation into SETUP Module/Command
+				//Create multiple Reels
+				this.reels = [];
+				this.numReels = 5;
+				for (var i = 0; i < this.numReels; i++) {
+					var reel = new _ReelComponent2.default();
+					reel.addTo(reelsContainer);
+					reel.container.x = i * 100;
+
+					reel.reelData.setCurrentIndex(i * 3);
+					reel.reelData.setScrollY(100);
+					//var dir = i % 2 == 0 ? -1 : 1;
+					//reel.reelData.speed = (i + 1) * 2 * dir;
+					reel.reelData.setViewSize(4);
+					reel.reelData.setSymbolHeight(SlotApp.config.SYMBOL_HEIGHT);
+					this.reels.push(reel);
+				}
+
+				for (var i = 0; i < this.numReels; i++) {
+					var reel = this.reels[i];
+					reel.createUI();
+				}
+
+				this.startTween();
+				this.render();
+			}
+		}, {
+			key: 'startTween',
+			value: function startTween() {
+
+				for (var i = 0; i < this.numReels; i++) {
+					var mover = new _ReelMover2.default();
+					var reel = this.reels[i];
+					reel.mover = mover;
+					mover.reelData = reel.reelData;
+					var inst = this;
+					setTimeout(function (reel) {
+						reel.reelData.speed = SlotApp.config.REEL_PULL_BACK_SPEED;
+						reel.mover.start({
+							speed: SlotApp.config.REEL_FULL_SPEED
+						}, SlotApp.config.REEL_SPEED_UP_TIME, SlotApp.config.REEL_START_TWEEN_TYPE);
+					}, i * SlotApp.config.REEL_START_DELAY, reel);
+				}
+
+				setTimeout(function () {
+					inst.stopReels();
+				}, 4000);
+			}
+		}, {
+			key: 'stopReels',
+			value: function stopReels() {
 				for (var i = 0; i < this.numReels; i++) {
 					var reel = this.reels[i];
 
-					reel.onAssetsLoaded(loader, resources);
-				}
+					//Test Swapping symbols
+					var stopSymbols = [5, 6, 7, 8];
+					var reelSymbols = reel.reelData.symbols;
+					var stopDistance = SlotApp.config.REEL_STOP_DISTANCE;
+					var fakeSymbols = reelSymbols.slice();
+					var currentIndex = reel.reelData.currentIndex;
+					for (var r = 0; r < stopSymbols.length; r++) {
+						var insertIndex = reel.reelData.correctIndex(currentIndex - stopDistance + (stopSymbols.length - r));
+						fakeSymbols[insertIndex] = stopSymbols[r];
+					}
+					reel.reelData.setSymbols(fakeSymbols);
 
-				this.render();
+					// Add stopper
+					var mover = new _ReelMover2.default();
+					reel.mover = mover;
+					mover.reelData = reel.reelData;
+					setTimeout(function (reel) {
+						//Work out stop position
+						var target = Math.floor((reel.reelData.scrollY - SlotApp.config.REEL_STOP_DISTANCE * reel.reelData.symbolHeight) / reel.reelData.symbolHeight) * reel.reelData.symbolHeight;
+						reel.reelData.speed = 0;
+						reel.mover.start({
+							_scrollY: target
+						}, SlotApp.config.REEL_STOP_TIME, SlotApp.config.REEL_STOP_TWEEN_TYPE);
+					}, i * 400, reel);
+				}
 			}
 		}, {
 			key: 'render',
 			value: function render() {
 				var inst = this;
 
+				_tween2.default.update();
+
 				for (var i = 0; i < this.numReels; i++) {
 					var reel = this.reels[i];
-					reel.reelData.setScrollY(reel.reelData.scrollY - reel.reelData.speed);
 					reel.render();
 				}
 
@@ -149,7 +251,7 @@
 		}]);
 
 		return SlotApp;
-	}();
+	}(_events2.default);
 
 	exports.default = SlotApp;
 
@@ -181,9 +283,9 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var ReelApp = function () {
-		function ReelApp() {
-			_classCallCheck(this, ReelApp);
+	var ReelComponent = function () {
+		function ReelComponent() {
+			_classCallCheck(this, ReelComponent);
 
 			console.log("Constructed");
 			this.symbols = [];
@@ -192,14 +294,15 @@
 			this.renderer = null;
 			this.textures = {};
 			this.reelData = new _ReelData2.default();
-			this.reelData.setSymbols([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+			this.reelData.setSymbols([0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
 			this.paytable = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 			this.frames = [];
 			this.parent = null;
 			this.container = null;
+			this.mover = null;
 		}
 
-		_createClass(ReelApp, [{
+		_createClass(ReelComponent, [{
 			key: 'addTo',
 			value: function addTo(parent) {
 				this.parent = parent;
@@ -207,12 +310,10 @@
 				this.parent.addChild(this.container);
 			}
 		}, {
-			key: 'onAssetsLoaded',
-			value: function onAssetsLoaded(loader, resources) {
+			key: 'createUI',
+			value: function createUI() {
 
-				console.log("Loaded");
-
-				// lets create moving shape
+				// Mask
 				var mask = new _pixi2.default.Graphics();
 				mask.lineStyle(0);
 				mask.beginFill(0x8bc5ff, 0.4);
@@ -240,6 +341,9 @@
 		}, {
 			key: 'render',
 			value: function render() {
+
+				this.reelData.update();
+
 				//Hide pooled sprites
 				for (var i = 0; i < 10; i++) {
 					var sprite = this.symbols[i];
@@ -256,10 +360,10 @@
 			}
 		}]);
 
-		return ReelApp;
+		return ReelComponent;
 	}();
 
-	exports.default = ReelApp;
+	exports.default = ReelComponent;
 
 /***/ },
 /* 3 */
@@ -286,9 +390,9 @@
 	    this.currentIndex = 0;
 	    this.numSymbols = 0;
 	    this.symbolHeight = 100;
-	    this.scrollY = 0;
+	    this._scrollY = 0;
 	    this.scrollOffset = 0;
-	    this.speed = 2;
+	    this.speed = 0;
 	    this.totalHeight = 0;
 	  }
 
@@ -296,7 +400,7 @@
 	    key: "setCurrentIndex",
 	    value: function setCurrentIndex(value) {
 	      this.currentIndex = this.correctIndex(value);
-	      this.scrollY = this.symbolHeight * this.currentIndex;
+	      this._scrollY = this.symbolHeight * this.currentIndex;
 	      this.updateView();
 	    }
 	  }, {
@@ -328,9 +432,9 @@
 	  }, {
 	    key: "setScrollY",
 	    value: function setScrollY(value) {
-	      this.scrollY = this.correctScrollY(value);
-	      this.currentIndex = this.correctIndex(Math.floor(this.scrollY / this.symbolHeight));
-	      this.scrollOffset = Math.abs(this.scrollY % this.symbolHeight);
+	      this._scrollY = this.correctScrollY(value);
+	      this.currentIndex = this.correctIndex(Math.floor(this._scrollY / this.symbolHeight));
+	      this.scrollOffset = Math.abs(this._scrollY % this.symbolHeight);
 	      this.updateView();
 	    }
 	  }, {
@@ -374,6 +478,19 @@
 	      }
 	      //If value is between 0 - totalHeight then it's valid
 	      return value;
+	    }
+	  }, {
+	    key: "update",
+	    value: function update() {
+	      this.setScrollY(this._scrollY + this.speed);
+	    }
+	  }, {
+	    key: "scrollY",
+	    set: function set(value) {
+	      this.setScrollY(value);
+	    },
+	    get: function get() {
+	      return this._scrollY;
 	    }
 	  }]);
 
@@ -41253,6 +41370,1338 @@
 	    return core.utils.uid();
 	};
 
+
+/***/ },
+/* 145 */
+/***/ function(module, exports) {
+
+	// Copyright Joyent, Inc. and other Node contributors.
+	//
+	// Permission is hereby granted, free of charge, to any person obtaining a
+	// copy of this software and associated documentation files (the
+	// "Software"), to deal in the Software without restriction, including
+	// without limitation the rights to use, copy, modify, merge, publish,
+	// distribute, sublicense, and/or sell copies of the Software, and to permit
+	// persons to whom the Software is furnished to do so, subject to the
+	// following conditions:
+	//
+	// The above copyright notice and this permission notice shall be included
+	// in all copies or substantial portions of the Software.
+	//
+	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+	// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+	// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+	// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+	// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+	// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+	function EventEmitter() {
+	  this._events = this._events || {};
+	  this._maxListeners = this._maxListeners || undefined;
+	}
+	module.exports = EventEmitter;
+
+	// Backwards-compat with node 0.10.x
+	EventEmitter.EventEmitter = EventEmitter;
+
+	EventEmitter.prototype._events = undefined;
+	EventEmitter.prototype._maxListeners = undefined;
+
+	// By default EventEmitters will print a warning if more than 10 listeners are
+	// added to it. This is a useful default which helps finding memory leaks.
+	EventEmitter.defaultMaxListeners = 10;
+
+	// Obviously not all Emitters should be limited to 10. This function allows
+	// that to be increased. Set to zero for unlimited.
+	EventEmitter.prototype.setMaxListeners = function(n) {
+	  if (!isNumber(n) || n < 0 || isNaN(n))
+	    throw TypeError('n must be a positive number');
+	  this._maxListeners = n;
+	  return this;
+	};
+
+	EventEmitter.prototype.emit = function(type) {
+	  var er, handler, len, args, i, listeners;
+
+	  if (!this._events)
+	    this._events = {};
+
+	  // If there is no 'error' event listener then throw.
+	  if (type === 'error') {
+	    if (!this._events.error ||
+	        (isObject(this._events.error) && !this._events.error.length)) {
+	      er = arguments[1];
+	      if (er instanceof Error) {
+	        throw er; // Unhandled 'error' event
+	      } else {
+	        // At least give some kind of context to the user
+	        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+	        err.context = er;
+	        throw err;
+	      }
+	    }
+	  }
+
+	  handler = this._events[type];
+
+	  if (isUndefined(handler))
+	    return false;
+
+	  if (isFunction(handler)) {
+	    switch (arguments.length) {
+	      // fast cases
+	      case 1:
+	        handler.call(this);
+	        break;
+	      case 2:
+	        handler.call(this, arguments[1]);
+	        break;
+	      case 3:
+	        handler.call(this, arguments[1], arguments[2]);
+	        break;
+	      // slower
+	      default:
+	        args = Array.prototype.slice.call(arguments, 1);
+	        handler.apply(this, args);
+	    }
+	  } else if (isObject(handler)) {
+	    args = Array.prototype.slice.call(arguments, 1);
+	    listeners = handler.slice();
+	    len = listeners.length;
+	    for (i = 0; i < len; i++)
+	      listeners[i].apply(this, args);
+	  }
+
+	  return true;
+	};
+
+	EventEmitter.prototype.addListener = function(type, listener) {
+	  var m;
+
+	  if (!isFunction(listener))
+	    throw TypeError('listener must be a function');
+
+	  if (!this._events)
+	    this._events = {};
+
+	  // To avoid recursion in the case that type === "newListener"! Before
+	  // adding it to the listeners, first emit "newListener".
+	  if (this._events.newListener)
+	    this.emit('newListener', type,
+	              isFunction(listener.listener) ?
+	              listener.listener : listener);
+
+	  if (!this._events[type])
+	    // Optimize the case of one listener. Don't need the extra array object.
+	    this._events[type] = listener;
+	  else if (isObject(this._events[type]))
+	    // If we've already got an array, just append.
+	    this._events[type].push(listener);
+	  else
+	    // Adding the second element, need to change to array.
+	    this._events[type] = [this._events[type], listener];
+
+	  // Check for listener leak
+	  if (isObject(this._events[type]) && !this._events[type].warned) {
+	    if (!isUndefined(this._maxListeners)) {
+	      m = this._maxListeners;
+	    } else {
+	      m = EventEmitter.defaultMaxListeners;
+	    }
+
+	    if (m && m > 0 && this._events[type].length > m) {
+	      this._events[type].warned = true;
+	      console.error('(node) warning: possible EventEmitter memory ' +
+	                    'leak detected. %d listeners added. ' +
+	                    'Use emitter.setMaxListeners() to increase limit.',
+	                    this._events[type].length);
+	      if (typeof console.trace === 'function') {
+	        // not supported in IE 10
+	        console.trace();
+	      }
+	    }
+	  }
+
+	  return this;
+	};
+
+	EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+	EventEmitter.prototype.once = function(type, listener) {
+	  if (!isFunction(listener))
+	    throw TypeError('listener must be a function');
+
+	  var fired = false;
+
+	  function g() {
+	    this.removeListener(type, g);
+
+	    if (!fired) {
+	      fired = true;
+	      listener.apply(this, arguments);
+	    }
+	  }
+
+	  g.listener = listener;
+	  this.on(type, g);
+
+	  return this;
+	};
+
+	// emits a 'removeListener' event iff the listener was removed
+	EventEmitter.prototype.removeListener = function(type, listener) {
+	  var list, position, length, i;
+
+	  if (!isFunction(listener))
+	    throw TypeError('listener must be a function');
+
+	  if (!this._events || !this._events[type])
+	    return this;
+
+	  list = this._events[type];
+	  length = list.length;
+	  position = -1;
+
+	  if (list === listener ||
+	      (isFunction(list.listener) && list.listener === listener)) {
+	    delete this._events[type];
+	    if (this._events.removeListener)
+	      this.emit('removeListener', type, listener);
+
+	  } else if (isObject(list)) {
+	    for (i = length; i-- > 0;) {
+	      if (list[i] === listener ||
+	          (list[i].listener && list[i].listener === listener)) {
+	        position = i;
+	        break;
+	      }
+	    }
+
+	    if (position < 0)
+	      return this;
+
+	    if (list.length === 1) {
+	      list.length = 0;
+	      delete this._events[type];
+	    } else {
+	      list.splice(position, 1);
+	    }
+
+	    if (this._events.removeListener)
+	      this.emit('removeListener', type, listener);
+	  }
+
+	  return this;
+	};
+
+	EventEmitter.prototype.removeAllListeners = function(type) {
+	  var key, listeners;
+
+	  if (!this._events)
+	    return this;
+
+	  // not listening for removeListener, no need to emit
+	  if (!this._events.removeListener) {
+	    if (arguments.length === 0)
+	      this._events = {};
+	    else if (this._events[type])
+	      delete this._events[type];
+	    return this;
+	  }
+
+	  // emit removeListener for all listeners on all events
+	  if (arguments.length === 0) {
+	    for (key in this._events) {
+	      if (key === 'removeListener') continue;
+	      this.removeAllListeners(key);
+	    }
+	    this.removeAllListeners('removeListener');
+	    this._events = {};
+	    return this;
+	  }
+
+	  listeners = this._events[type];
+
+	  if (isFunction(listeners)) {
+	    this.removeListener(type, listeners);
+	  } else if (listeners) {
+	    // LIFO order
+	    while (listeners.length)
+	      this.removeListener(type, listeners[listeners.length - 1]);
+	  }
+	  delete this._events[type];
+
+	  return this;
+	};
+
+	EventEmitter.prototype.listeners = function(type) {
+	  var ret;
+	  if (!this._events || !this._events[type])
+	    ret = [];
+	  else if (isFunction(this._events[type]))
+	    ret = [this._events[type]];
+	  else
+	    ret = this._events[type].slice();
+	  return ret;
+	};
+
+	EventEmitter.prototype.listenerCount = function(type) {
+	  if (this._events) {
+	    var evlistener = this._events[type];
+
+	    if (isFunction(evlistener))
+	      return 1;
+	    else if (evlistener)
+	      return evlistener.length;
+	  }
+	  return 0;
+	};
+
+	EventEmitter.listenerCount = function(emitter, type) {
+	  return emitter.listenerCount(type);
+	};
+
+	function isFunction(arg) {
+	  return typeof arg === 'function';
+	}
+
+	function isNumber(arg) {
+	  return typeof arg === 'number';
+	}
+
+	function isObject(arg) {
+	  return typeof arg === 'object' && arg !== null;
+	}
+
+	function isUndefined(arg) {
+	  return arg === void 0;
+	}
+
+
+/***/ },
+/* 146 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _tween = __webpack_require__(147);
+
+	var _tween2 = _interopRequireDefault(_tween);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var ReelMover = function () {
+		function ReelMover() {
+			_classCallCheck(this, ReelMover);
+
+			this.reelData = null;
+		}
+
+		_createClass(ReelMover, [{
+			key: 'start',
+			value: function start(toObj, time, ease) {
+
+				var eases = [_tween2.default.Easing.Cubic.In, _tween2.default.Easing.Cubic.Out, _tween2.default.Easing.Linear.None, _tween2.default.Easing.Quintic.In, _tween2.default.Easing.Quintic.Out];
+
+				//Quick Tween test
+				//var tweenData = { speed: 0 };
+				var tween = new _tween2.default.Tween(this.reelData).to(toObj, time).easing(eases[ease]).onComplete(function () {}).onUpdate(function () {}).start();
+			}
+		}]);
+
+		return ReelMover;
+	}();
+
+	exports.default = ReelMover;
+
+/***/ },
+/* 147 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/**
+	 * Tween.js - Licensed under the MIT license
+	 * https://github.com/tweenjs/tween.js
+	 * ----------------------------------------------
+	 *
+	 * See https://github.com/tweenjs/tween.js/graphs/contributors for the full list of contributors.
+	 * Thank you all, you're awesome!
+	 */
+
+	// Include a performance.now polyfill
+	(function () {
+
+		if ('performance' in window === false) {
+			window.performance = {};
+		}
+
+		// IE 8
+		Date.now = (Date.now || function () {
+			return new Date().getTime();
+		});
+
+		if ('now' in window.performance === false) {
+			var offset = window.performance.timing && window.performance.timing.navigationStart ? window.performance.timing.navigationStart
+			                                                                                    : Date.now();
+
+			window.performance.now = function () {
+				return Date.now() - offset;
+			};
+		}
+
+	})();
+
+	var TWEEN = TWEEN || (function () {
+
+		var _tweens = [];
+
+		return {
+
+			getAll: function () {
+
+				return _tweens;
+
+			},
+
+			removeAll: function () {
+
+				_tweens = [];
+
+			},
+
+			add: function (tween) {
+
+				_tweens.push(tween);
+
+			},
+
+			remove: function (tween) {
+
+				var i = _tweens.indexOf(tween);
+
+				if (i !== -1) {
+					_tweens.splice(i, 1);
+				}
+
+			},
+
+			update: function (time) {
+
+				if (_tweens.length === 0) {
+					return false;
+				}
+
+				var i = 0;
+
+				time = time !== undefined ? time : window.performance.now();
+
+				while (i < _tweens.length) {
+
+					if (_tweens[i].update(time)) {
+						i++;
+					} else {
+						_tweens.splice(i, 1);
+					}
+
+				}
+
+				return true;
+
+			}
+		};
+
+	})();
+
+	TWEEN.Tween = function (object) {
+
+		var _object = object;
+		var _valuesStart = {};
+		var _valuesEnd = {};
+		var _valuesStartRepeat = {};
+		var _duration = 1000;
+		var _repeat = 0;
+		var _yoyo = false;
+		var _isPlaying = false;
+		var _reversed = false;
+		var _delayTime = 0;
+		var _startTime = null;
+		var _easingFunction = TWEEN.Easing.Linear.None;
+		var _interpolationFunction = TWEEN.Interpolation.Linear;
+		var _chainedTweens = [];
+		var _onStartCallback = null;
+		var _onStartCallbackFired = false;
+		var _onUpdateCallback = null;
+		var _onCompleteCallback = null;
+		var _onStopCallback = null;
+
+		// Set all starting values present on the target object
+		for (var field in object) {
+			_valuesStart[field] = parseFloat(object[field], 10);
+		}
+
+		this.to = function (properties, duration) {
+
+			if (duration !== undefined) {
+				_duration = duration;
+			}
+
+			_valuesEnd = properties;
+
+			return this;
+
+		};
+
+		this.start = function (time) {
+
+			TWEEN.add(this);
+
+			_isPlaying = true;
+
+			_onStartCallbackFired = false;
+
+			_startTime = time !== undefined ? time : window.performance.now();
+			_startTime += _delayTime;
+
+			for (var property in _valuesEnd) {
+
+				// Check if an Array was provided as property value
+				if (_valuesEnd[property] instanceof Array) {
+
+					if (_valuesEnd[property].length === 0) {
+						continue;
+					}
+
+					// Create a local copy of the Array with the start value at the front
+					_valuesEnd[property] = [_object[property]].concat(_valuesEnd[property]);
+
+				}
+
+				// If `to()` specifies a property that doesn't exist in the source object,
+				// we should not set that property in the object
+				if (_valuesStart[property] === undefined) {
+					continue;
+				}
+
+				_valuesStart[property] = _object[property];
+
+				if ((_valuesStart[property] instanceof Array) === false) {
+					_valuesStart[property] *= 1.0; // Ensures we're using numbers, not strings
+				}
+
+				_valuesStartRepeat[property] = _valuesStart[property] || 0;
+
+			}
+
+			return this;
+
+		};
+
+		this.stop = function () {
+
+			if (!_isPlaying) {
+				return this;
+			}
+
+			TWEEN.remove(this);
+			_isPlaying = false;
+
+			if (_onStopCallback !== null) {
+				_onStopCallback.call(_object);
+			}
+
+			this.stopChainedTweens();
+			return this;
+
+		};
+
+		this.stopChainedTweens = function () {
+
+			for (var i = 0, numChainedTweens = _chainedTweens.length; i < numChainedTweens; i++) {
+				_chainedTweens[i].stop();
+			}
+
+		};
+
+		this.delay = function (amount) {
+
+			_delayTime = amount;
+			return this;
+
+		};
+
+		this.repeat = function (times) {
+
+			_repeat = times;
+			return this;
+
+		};
+
+		this.yoyo = function (yoyo) {
+
+			_yoyo = yoyo;
+			return this;
+
+		};
+
+
+		this.easing = function (easing) {
+
+			_easingFunction = easing;
+			return this;
+
+		};
+
+		this.interpolation = function (interpolation) {
+
+			_interpolationFunction = interpolation;
+			return this;
+
+		};
+
+		this.chain = function () {
+
+			_chainedTweens = arguments;
+			return this;
+
+		};
+
+		this.onStart = function (callback) {
+
+			_onStartCallback = callback;
+			return this;
+
+		};
+
+		this.onUpdate = function (callback) {
+
+			_onUpdateCallback = callback;
+			return this;
+
+		};
+
+		this.onComplete = function (callback) {
+
+			_onCompleteCallback = callback;
+			return this;
+
+		};
+
+		this.onStop = function (callback) {
+
+			_onStopCallback = callback;
+			return this;
+
+		};
+
+		this.update = function (time) {
+
+			var property;
+			var elapsed;
+			var value;
+
+			if (time < _startTime) {
+				return true;
+			}
+
+			if (_onStartCallbackFired === false) {
+
+				if (_onStartCallback !== null) {
+					_onStartCallback.call(_object);
+				}
+
+				_onStartCallbackFired = true;
+
+			}
+
+			elapsed = (time - _startTime) / _duration;
+			elapsed = elapsed > 1 ? 1 : elapsed;
+
+			value = _easingFunction(elapsed);
+
+			for (property in _valuesEnd) {
+
+				// Don't update properties that do not exist in the source object
+				if (_valuesStart[property] === undefined) {
+					continue;
+				}
+
+				var start = _valuesStart[property] || 0;
+				var end = _valuesEnd[property];
+
+				if (end instanceof Array) {
+
+					_object[property] = _interpolationFunction(end, value);
+
+				} else {
+
+					// Parses relative end values with start as base (e.g.: +10, -3)
+					if (typeof (end) === 'string') {
+
+						if (end.startsWith('+') || end.startsWith('-')) {
+							end = start + parseFloat(end, 10);
+						} else {
+							end = parseFloat(end, 10);
+						}
+					}
+
+					// Protect against non numeric properties.
+					if (typeof (end) === 'number') {
+						_object[property] = start + (end - start) * value;
+					}
+
+				}
+
+			}
+
+			if (_onUpdateCallback !== null) {
+				_onUpdateCallback.call(_object, value);
+			}
+
+			if (elapsed === 1) {
+
+				if (_repeat > 0) {
+
+					if (isFinite(_repeat)) {
+						_repeat--;
+					}
+
+					// Reassign starting values, restart by making startTime = now
+					for (property in _valuesStartRepeat) {
+
+						if (typeof (_valuesEnd[property]) === 'string') {
+							_valuesStartRepeat[property] = _valuesStartRepeat[property] + parseFloat(_valuesEnd[property], 10);
+						}
+
+						if (_yoyo) {
+							var tmp = _valuesStartRepeat[property];
+
+							_valuesStartRepeat[property] = _valuesEnd[property];
+							_valuesEnd[property] = tmp;
+						}
+
+						_valuesStart[property] = _valuesStartRepeat[property];
+
+					}
+
+					if (_yoyo) {
+						_reversed = !_reversed;
+					}
+
+					_startTime = time + _delayTime;
+
+					return true;
+
+				} else {
+
+					if (_onCompleteCallback !== null) {
+						_onCompleteCallback.call(_object);
+					}
+
+					for (var i = 0, numChainedTweens = _chainedTweens.length; i < numChainedTweens; i++) {
+						// Make the chained tweens start exactly at the time they should,
+						// even if the `update()` method was called way past the duration of the tween
+						_chainedTweens[i].start(_startTime + _duration);
+					}
+
+					return false;
+
+				}
+
+			}
+
+			return true;
+
+		};
+
+	};
+
+
+	TWEEN.Easing = {
+
+		Linear: {
+
+			None: function (k) {
+
+				return k;
+
+			}
+
+		},
+
+		Quadratic: {
+
+			In: function (k) {
+
+				return k * k;
+
+			},
+
+			Out: function (k) {
+
+				return k * (2 - k);
+
+			},
+
+			InOut: function (k) {
+
+				if ((k *= 2) < 1) {
+					return 0.5 * k * k;
+				}
+
+				return - 0.5 * (--k * (k - 2) - 1);
+
+			}
+
+		},
+
+		Cubic: {
+
+			In: function (k) {
+
+				return k * k * k;
+
+			},
+
+			Out: function (k) {
+
+				return --k * k * k + 1;
+
+			},
+
+			InOut: function (k) {
+
+				if ((k *= 2) < 1) {
+					return 0.5 * k * k * k;
+				}
+
+				return 0.5 * ((k -= 2) * k * k + 2);
+
+			}
+
+		},
+
+		Quartic: {
+
+			In: function (k) {
+
+				return k * k * k * k;
+
+			},
+
+			Out: function (k) {
+
+				return 1 - (--k * k * k * k);
+
+			},
+
+			InOut: function (k) {
+
+				if ((k *= 2) < 1) {
+					return 0.5 * k * k * k * k;
+				}
+
+				return - 0.5 * ((k -= 2) * k * k * k - 2);
+
+			}
+
+		},
+
+		Quintic: {
+
+			In: function (k) {
+
+				return k * k * k * k * k;
+
+			},
+
+			Out: function (k) {
+
+				return --k * k * k * k * k + 1;
+
+			},
+
+			InOut: function (k) {
+
+				if ((k *= 2) < 1) {
+					return 0.5 * k * k * k * k * k;
+				}
+
+				return 0.5 * ((k -= 2) * k * k * k * k + 2);
+
+			}
+
+		},
+
+		Sinusoidal: {
+
+			In: function (k) {
+
+				return 1 - Math.cos(k * Math.PI / 2);
+
+			},
+
+			Out: function (k) {
+
+				return Math.sin(k * Math.PI / 2);
+
+			},
+
+			InOut: function (k) {
+
+				return 0.5 * (1 - Math.cos(Math.PI * k));
+
+			}
+
+		},
+
+		Exponential: {
+
+			In: function (k) {
+
+				return k === 0 ? 0 : Math.pow(1024, k - 1);
+
+			},
+
+			Out: function (k) {
+
+				return k === 1 ? 1 : 1 - Math.pow(2, - 10 * k);
+
+			},
+
+			InOut: function (k) {
+
+				if (k === 0) {
+					return 0;
+				}
+
+				if (k === 1) {
+					return 1;
+				}
+
+				if ((k *= 2) < 1) {
+					return 0.5 * Math.pow(1024, k - 1);
+				}
+
+				return 0.5 * (- Math.pow(2, - 10 * (k - 1)) + 2);
+
+			}
+
+		},
+
+		Circular: {
+
+			In: function (k) {
+
+				return 1 - Math.sqrt(1 - k * k);
+
+			},
+
+			Out: function (k) {
+
+				return Math.sqrt(1 - (--k * k));
+
+			},
+
+			InOut: function (k) {
+
+				if ((k *= 2) < 1) {
+					return - 0.5 * (Math.sqrt(1 - k * k) - 1);
+				}
+
+				return 0.5 * (Math.sqrt(1 - (k -= 2) * k) + 1);
+
+			}
+
+		},
+
+		Elastic: {
+
+			In: function (k) {
+
+				var s;
+				var a = 0.1;
+				var p = 0.4;
+
+				if (k === 0) {
+					return 0;
+				}
+
+				if (k === 1) {
+					return 1;
+				}
+
+				if (!a || a < 1) {
+					a = 1;
+					s = p / 4;
+				} else {
+					s = p * Math.asin(1 / a) / (2 * Math.PI);
+				}
+
+				return - (a * Math.pow(2, 10 * (k -= 1)) * Math.sin((k - s) * (2 * Math.PI) / p));
+
+			},
+
+			Out: function (k) {
+
+				var s;
+				var a = 0.1;
+				var p = 0.4;
+
+				if (k === 0) {
+					return 0;
+				}
+
+				if (k === 1) {
+					return 1;
+				}
+
+				if (!a || a < 1) {
+					a = 1;
+					s = p / 4;
+				} else {
+					s = p * Math.asin(1 / a) / (2 * Math.PI);
+				}
+
+				return (a * Math.pow(2, - 10 * k) * Math.sin((k - s) * (2 * Math.PI) / p) + 1);
+
+			},
+
+			InOut: function (k) {
+
+				var s;
+				var a = 0.1;
+				var p = 0.4;
+
+				if (k === 0) {
+					return 0;
+				}
+
+				if (k === 1) {
+					return 1;
+				}
+
+				if (!a || a < 1) {
+					a = 1;
+					s = p / 4;
+				} else {
+					s = p * Math.asin(1 / a) / (2 * Math.PI);
+				}
+
+				if ((k *= 2) < 1) {
+					return - 0.5 * (a * Math.pow(2, 10 * (k -= 1)) * Math.sin((k - s) * (2 * Math.PI) / p));
+				}
+
+				return a * Math.pow(2, -10 * (k -= 1)) * Math.sin((k - s) * (2 * Math.PI) / p) * 0.5 + 1;
+
+			}
+
+		},
+
+		Back: {
+
+			In: function (k) {
+
+				var s = 1.70158;
+
+				return k * k * ((s + 1) * k - s);
+
+			},
+
+			Out: function (k) {
+
+				var s = 1.70158;
+
+				return --k * k * ((s + 1) * k + s) + 1;
+
+			},
+
+			InOut: function (k) {
+
+				var s = 1.70158 * 1.525;
+
+				if ((k *= 2) < 1) {
+					return 0.5 * (k * k * ((s + 1) * k - s));
+				}
+
+				return 0.5 * ((k -= 2) * k * ((s + 1) * k + s) + 2);
+
+			}
+
+		},
+
+		Bounce: {
+
+			In: function (k) {
+
+				return 1 - TWEEN.Easing.Bounce.Out(1 - k);
+
+			},
+
+			Out: function (k) {
+
+				if (k < (1 / 2.75)) {
+					return 7.5625 * k * k;
+				} else if (k < (2 / 2.75)) {
+					return 7.5625 * (k -= (1.5 / 2.75)) * k + 0.75;
+				} else if (k < (2.5 / 2.75)) {
+					return 7.5625 * (k -= (2.25 / 2.75)) * k + 0.9375;
+				} else {
+					return 7.5625 * (k -= (2.625 / 2.75)) * k + 0.984375;
+				}
+
+			},
+
+			InOut: function (k) {
+
+				if (k < 0.5) {
+					return TWEEN.Easing.Bounce.In(k * 2) * 0.5;
+				}
+
+				return TWEEN.Easing.Bounce.Out(k * 2 - 1) * 0.5 + 0.5;
+
+			}
+
+		}
+
+	};
+
+	TWEEN.Interpolation = {
+
+		Linear: function (v, k) {
+
+			var m = v.length - 1;
+			var f = m * k;
+			var i = Math.floor(f);
+			var fn = TWEEN.Interpolation.Utils.Linear;
+
+			if (k < 0) {
+				return fn(v[0], v[1], f);
+			}
+
+			if (k > 1) {
+				return fn(v[m], v[m - 1], m - f);
+			}
+
+			return fn(v[i], v[i + 1 > m ? m : i + 1], f - i);
+
+		},
+
+		Bezier: function (v, k) {
+
+			var b = 0;
+			var n = v.length - 1;
+			var pw = Math.pow;
+			var bn = TWEEN.Interpolation.Utils.Bernstein;
+
+			for (var i = 0; i <= n; i++) {
+				b += pw(1 - k, n - i) * pw(k, i) * v[i] * bn(n, i);
+			}
+
+			return b;
+
+		},
+
+		CatmullRom: function (v, k) {
+
+			var m = v.length - 1;
+			var f = m * k;
+			var i = Math.floor(f);
+			var fn = TWEEN.Interpolation.Utils.CatmullRom;
+
+			if (v[0] === v[m]) {
+
+				if (k < 0) {
+					i = Math.floor(f = m * (1 + k));
+				}
+
+				return fn(v[(i - 1 + m) % m], v[i], v[(i + 1) % m], v[(i + 2) % m], f - i);
+
+			} else {
+
+				if (k < 0) {
+					return v[0] - (fn(v[0], v[0], v[1], v[1], -f) - v[0]);
+				}
+
+				if (k > 1) {
+					return v[m] - (fn(v[m], v[m], v[m - 1], v[m - 1], f - m) - v[m]);
+				}
+
+				return fn(v[i ? i - 1 : 0], v[i], v[m < i + 1 ? m : i + 1], v[m < i + 2 ? m : i + 2], f - i);
+
+			}
+
+		},
+
+		Utils: {
+
+			Linear: function (p0, p1, t) {
+
+				return (p1 - p0) * t + p0;
+
+			},
+
+			Bernstein: function (n, i) {
+
+				var fc = TWEEN.Interpolation.Utils.Factorial;
+
+				return fc(n) / fc(i) / fc(n - i);
+
+			},
+
+			Factorial: (function () {
+
+				var a = [1];
+
+				return function (n) {
+
+					var s = 1;
+
+					if (a[n]) {
+						return a[n];
+					}
+
+					for (var i = n; i > 1; i--) {
+						s *= i;
+					}
+
+					a[n] = s;
+					return s;
+
+				};
+
+			})(),
+
+			CatmullRom: function (p0, p1, p2, p3, t) {
+
+				var v0 = (p2 - p0) * 0.5;
+				var v1 = (p3 - p1) * 0.5;
+				var t2 = t * t;
+				var t3 = t * t2;
+
+				return (2 * p1 - 2 * p2 + v0 + v1) * t3 + (- 3 * p1 + 3 * p2 - 2 * v0 - v1) * t2 + v0 * t + p1;
+
+			}
+
+		}
+
+	};
+
+	// UMD (Universal Module Definition)
+	(function (root) {
+
+		if (true) {
+
+			// AMD
+			!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function () {
+				return TWEEN;
+			}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+		} else if (typeof module !== 'undefined' && typeof exports === 'object') {
+
+			// Node.js
+			module.exports = TWEEN;
+
+		} else if (root !== undefined) {
+
+			// Global variable
+			root.TWEEN = TWEEN;
+
+		}
+
+	})(this);
+
+
+/***/ },
+/* 148 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _events = __webpack_require__(145);
+
+	var _events2 = _interopRequireDefault(_events);
+
+	var _jquery = __webpack_require__(4);
+
+	var _jquery2 = _interopRequireDefault(_jquery);
+
+	var _pixi = __webpack_require__(5);
+
+	var _pixi2 = _interopRequireDefault(_pixi);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var AssetLoader = function (_EventEmitter) {
+		_inherits(AssetLoader, _EventEmitter);
+
+		function AssetLoader() {
+			_classCallCheck(this, AssetLoader);
+
+			return _possibleConstructorReturn(this, Object.getPrototypeOf(AssetLoader).call(this));
+		}
+
+		_createClass(AssetLoader, [{
+			key: 'load',
+			value: function load() {
+
+				var inst = this;
+				_jquery2.default.ajax({
+					dataType: "json",
+					url: "assets.json",
+					success: function success(data) {
+						inst.configLoaded(data);
+					}
+				});
+			}
+		}, {
+			key: 'configLoaded',
+			value: function configLoaded(data) {
+
+				//LOAD ASSETS
+				var loader = _pixi2.default.loader;
+
+				for (var prop in data.assets) {
+					loader.add(data.assets[prop]);
+				}
+
+				var inst = this;
+				loader.load(function (loader, resources) {
+					inst.onAssetsLoaded(loader, resources);
+				});
+			}
+		}, {
+			key: 'onAssetsLoaded',
+			value: function onAssetsLoaded(loader, resources) {
+				this.emit(AssetLoader.LOAD_COMPLETE, loader, resources);
+			}
+		}]);
+
+		return AssetLoader;
+	}(_events2.default);
+
+	AssetLoader.LOAD_COMPLETE = "ASSET_LOADER_LOAD_COMPLETE";
+
+	exports.default = AssetLoader;
 
 /***/ }
 /******/ ]);

@@ -2,17 +2,36 @@
     <head>
         <meta charset="utf-8">
 		<style>
-	        /*html { 
-			  background: url(http://img03.deviantart.net/1d5f/i/2013/074/b/c/dark_night_background_by_msteeq-d5y5iaq.jpg) no-repeat center center fixed; 
+	        html { 
+			  background: url(http://img09.deviantart.net/d1d5/i/2014/311/c/5/fantasy_city_by_britneypringle-d85kpn2.jpg) no-repeat center center fixed; 
 			  -webkit-background-size: cover;
 			  -moz-background-size: cover;
 			  -o-background-size: cover;
 			  background-size: cover;
-			}*/
+			}
+
+			#game-container {
+			
+				width: 1000px;
+		        height: 600px;
+		        border:1px solid #000;
+		        position:absolute; /*it can be fixed too*/
+		        left:0; right:0;
+		        top:0; bottom:0;
+		        margin:auto;
+
+		        /*this to solve "the content will not be cut when the window is smaller than the content": */
+		        max-width:100%;
+		        max-height:100%;
+		        overflow:auto;
+
+			}
+
+
 		</style>
+		<script type="text/javascript" src="bundle.js" charset="utf-8"></script>
     </head>
     <body>
-		<!--<script type="text/javascript" src="Framework.js" charset="utf-8"></script>-->
-        <script type="text/javascript" src="bundle.js" charset="utf-8"></script>
+		<div id="game-container" />
     </body>
 </html>

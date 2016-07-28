@@ -8,15 +8,15 @@ class ReelData {
     this.currentIndex = 0;
     this.numSymbols = 0;
     this.symbolHeight = 100;
-    this.scrollY = 0;
+    this._scrollY = 0;
     this.scrollOffset = 0;
-    this.speed = 2;
+    this.speed = 0;
     this.totalHeight = 0;
   }
 
   setCurrentIndex(value) {
     this.currentIndex = this.correctIndex(value);
-    this.scrollY = this.symbolHeight * this.currentIndex;
+    this._scrollY = this.symbolHeight * this.currentIndex;
     this.updateView();
   }
 
@@ -42,10 +42,18 @@ class ReelData {
     this.updateView();
   }
 
+  set scrollY(value) {
+    this.setScrollY(value);    
+  }
+
+  get scrollY() {
+    return this._scrollY;
+  }
+
   setScrollY(value) {
-    this.scrollY = this.correctScrollY(value);
-    this.currentIndex = this.correctIndex(Math.floor(this.scrollY / this.symbolHeight));
-    this.scrollOffset = Math.abs(this.scrollY % this.symbolHeight);
+    this._scrollY = this.correctScrollY(value);
+    this.currentIndex = this.correctIndex(Math.floor(this._scrollY / this.symbolHeight));
+    this.scrollOffset = Math.abs(this._scrollY % this.symbolHeight);
     this.updateView();
   }
 
@@ -87,6 +95,10 @@ class ReelData {
     }
     //If value is between 0 - totalHeight then it's valid
     return value;
+  }
+
+  update() {
+    this.setScrollY(this._scrollY + this.speed);
   }
 
 }

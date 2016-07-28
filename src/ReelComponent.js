@@ -3,7 +3,7 @@ import ReelData from './../libs/ReelData.js';
 import $ from 'jquery';
 import PIXI from 'pixi.js';
 
-class ReelApp {
+class ReelComponent {
 
 	constructor() {
 		console.log("Constructed");
@@ -13,11 +13,12 @@ class ReelApp {
 		this.renderer = null;
 		this.textures = {};
 		this.reelData = new ReelData();
-		this.reelData.setSymbols([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+		this.reelData.setSymbols([0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
 		this.paytable = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 		this.frames = [];
 		this.parent = null;
 		this.container = null;
+		this.mover = null;
 	}
 
 	addTo(parent) {
@@ -26,12 +27,9 @@ class ReelApp {
 		this.parent.addChild(this.container);
 	}
 
-	onAssetsLoaded(loader, resources) {
-
-		console.log("Loaded");
-
+	createUI() {
 		
-		// lets create moving shape
+		// Mask
 		var mask = new PIXI.Graphics();
 		mask.lineStyle(0);
 		mask.beginFill(0x8bc5ff, 0.4);
@@ -39,7 +37,6 @@ class ReelApp {
 		this.container.addChild(mask);
 		this.container.mask = mask;
 		this.parent.addChild(this.container);
-
 
 		//Add 10 symbols to avoid switching textures and pool them, assumes only ever 1 of each for now.
 		//Originally this was done with textures but I've been warned that is very heavy switching textures
@@ -60,6 +57,9 @@ class ReelApp {
 	}
 
 	render() {
+		
+		this.reelData.update();
+
 		//Hide pooled sprites
 		for(var i=0; i<10; i++) {
 			var sprite = this.symbols[i];
@@ -78,4 +78,4 @@ class ReelApp {
 	
 }
 
-export default ReelApp;
+export default ReelComponent;
