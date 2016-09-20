@@ -12,6 +12,11 @@ class ReelData {
     this.scrollOffset = 0;
     this.speed = 0;
     this.totalHeight = 0;
+    this.stopY = -1;
+    this.stopping = false;
+    this.nextReelset = null;
+    this.distanceTravelled = 0;
+    this.waitingForSwap = false;
   }
 
   setCurrentIndex(value) {
@@ -43,7 +48,7 @@ class ReelData {
   }
 
   set scrollY(value) {
-    this.setScrollY(value);    
+    this.setScrollY(value);
   }
 
   get scrollY() {
@@ -56,7 +61,6 @@ class ReelData {
     this.scrollOffset = Math.abs(this._scrollY % this.symbolHeight);
     this.updateView();
   }
-
 
   updateView() {
     this.view = [];
@@ -99,6 +103,43 @@ class ReelData {
 
   update() {
     this.setScrollY(this._scrollY + this.speed);
+    
+    if(this.waitingForSwap) {
+      this.distanceTravelled += this.speed;
+      //console.log("Distance " + this.distanceTravelled + " speed " + this.speed);
+      if(this.distanceTravelled <= -600) {
+        console.log("SWAP REEL SETS BACK NOW!!!!!!");
+        this.waitingForSwap = false;
+        //Can safely swap the reelset back to original now, rather than with fake overlay symbols
+        this.setSymbols([0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
+      }
+    }
+  }
+
+  // Sets the stop target of the reel data based on stop index
+  calculateStop(index, stopDistance) {
+    
+    //Get the symbols that we are stopping on and overlay them on a copy of the current reelset at stopDistance above current index
+    var stopSymbols = this.nextReelset.slice(index, index + this.viewSize);
+    var reelSymbols = this.symbols;
+    var fakeSymbols = reelSymbols.slice();
+    var currentIndex = this.currentIndex;
+    for (var r = 0; r < stopSymbols.length; r++) {
+      var insertIndex = this.correctIndex(currentIndex - stopDistance -1) - (r);
+      fakeSymbols[this.correctIndex(insertIndex)] = stopSymbols[stopSymbols.length - (1 + r)];
+    }
+
+    this.stopY = this.correctIndex(currentIndex - stopDistance - this.viewSize) * this.symbolHeight;
+    if(this.stopY > this.scrollY) {
+      //Invert target so reels dont go wrong way
+      this.stopY = 0 - ((this.symbols.length * this.symbolHeight) - this.stopY);
+    }
+
+    this.stopping = true;
+    this.setSymbols(fakeSymbols);
+
+    console.log("calculateStop stopAt=" + index + " currentIndex=" + currentIndex + " insertIndex=" + insertIndex + " currentY=" + this.scrollY + " stopY=" + this.stopY);
+
   }
 
 }
